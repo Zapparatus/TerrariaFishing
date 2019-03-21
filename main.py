@@ -20,55 +20,35 @@ def contourLength():
     RESOLUTION_WIDTH, RESOLUTION_HEIGHT = 1920, 1080
     WIDTH, HEIGHT = 150, 300
     box=(RESOLUTION_WIDTH//2 - WIDTH//2, RESOLUTION_HEIGHT//2 - HEIGHT//2, RESOLUTION_WIDTH//2 + WIDTH//2, RESOLUTION_HEIGHT//2 + HEIGHT//2)
-    name = "TerrariaFishing"
-    cv2.namedWindow(name)
-    cv2.moveWindow(name, 1920, 0)
-    RESOLUTION_WIDTH, RESOLUTION_HEIGHT = 1920, 1080
-    WIDTH, HEIGHT = 150, 300
-    box=(RESOLUTION_WIDTH//2 - WIDTH//2, RESOLUTION_HEIGHT//2 - HEIGHT//2, RESOLUTION_WIDTH//2 + WIDTH//2, RESOLUTION_HEIGHT//2 + HEIGHT//2)
     last_length = 0
+    last_diff = 0
     starting = True
-    catching = False
-    while (True):
+    while True:
         if keyboard.is_pressed('q'):
             break
         img_pil = ImageGrab.grab(bbox=box)
         img_np = np.array(img_pil.getdata(), dtype='uint8')\
             .reshape((img_pil.size[1], img_pil.size[0], 3))
-        gray = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(img_np, 100, 200)
-        contours, heirarchy = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours = sorted(contours, key=lambda a: cv2.arcLength(a, False), reverse=True)
+        white_only = cv2.inRange(img_np, np.array([100, 100, 100]), np.array([255, 255, 255]))
+        white_only = cv2.bitwise_and(img_np, img_np, mask=white_only)
+        gray = cv2.cvtColor(white_only, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(gray, 100, 200)
+        contours, hierarchy = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours = sorted(contours, key=lambda cnt: cv2.arcLength(cnt, False), reverse=True)
         if not(cv2.arcLength(contours[0], False) == last_length) and not(starting):
-            print("Catching fish")
-            click(RESOLUTION_WIDTH // 2, 3*RESOLUTION_HEIGHT//4)
-            time.sleep(0.3)
-            click(RESOLUTION_WIDTH // 2, 3*RESOLUTION_HEIGHT//4)
-            time.sleep(2)
+            if not(abs(cv2.arcLength(contours[0], False) - last_length) == last_diff):
+                print("Catching fish")
+                click(RESOLUTION_WIDTH // 2, 3*RESOLUTION_HEIGHT//4)
+                time.sleep(0.3)
+                click(RESOLUTION_WIDTH // 2, 3*RESOLUTION_HEIGHT//4)
+                time.sleep(2)
+                print("Finished sleeping")
+                img_np = cv2.drawContours(img_np, contours, 0, (0, 255, 0), 2)
+            last_diff = abs(cv2.arcLength(contours[0], False) - last_length)
         if starting:
             starting = False
-        img_np = cv2.drawContours(img_np, contours, 0, (0, 255, 0), 2)
-        cv2.imshow(name, img_np)
+        cv2.imshow(name, white_only)
         last_length = cv2.arcLength(contours[0], False)
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-            cv2.destroyAllWindows()
-            break
-    total_info = WIDTH * HEIGHT * 3
-    timer = 0
-    while (True):
-        if keyboard.is_pressed('q'):
-            break
-        img_pil = ImageGrab.grab(bbox=box)
-        img_np = np.array(img_pil.getdata(), dtype='uint8')\
-            .reshape((img_pil.size[1], img_pil.size[0], 3))
-        gray = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(img_np, 100, 200)
-        contours, heirarchy = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours = sorted(contours, key=lambda a: cv2.arcLength(a, False), reverse=True)
-        contours = contours[0:1]
-        img_np = cv2.drawContours(img_np, contours, -1, (0, 255, 0), 2)
-        cv2.imshow(name, img_np)
-        prev_img = img_np
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
             break
