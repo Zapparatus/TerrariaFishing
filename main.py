@@ -43,11 +43,12 @@ def contourLength():
                 click(RESOLUTION_WIDTH // 2, 3*RESOLUTION_HEIGHT//4)
                 time.sleep(2)
                 print("Finished sleeping")
-                img_np = cv2.drawContours(img_np, contours, 0, (0, 255, 0), 2)
             last_diff = abs(cv2.arcLength(contours[0], False) - last_length)
         if starting:
             starting = False
-        cv2.imshow(name, white_only)
+        if len(contours) > 0:
+            img_np = cv2.drawContours(img_np, contours, 0, (0, 255, 0), 2)
+        cv2.imshow(name, img_np)
         last_length = cv2.arcLength(contours[0], False)
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
